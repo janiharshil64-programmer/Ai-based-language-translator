@@ -1,0 +1,5 @@
+streamlit>=1.37.0
+openai>=1.52.0
+streamlit-mic-recorder>=0.0.8
+deep-translator>=1.11.4
+gTTS>=2.5.3
