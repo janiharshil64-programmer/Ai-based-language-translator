@@ -4,12 +4,12 @@ import os
 
 try:
     from openai import OpenAI
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     OpenAI = None  # type: ignore
 
 try:
     from gtts import gTTS
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     gTTS = None  # type: ignore
 
 LANG_TO_TTS_VOICE = {
@@ -22,7 +22,6 @@ LANG_TO_TTS_VOICE = {
     "ja": "alloy",
 }
 
-
 def _openai_client() -> Optional["OpenAI"]:
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -31,7 +30,6 @@ def _openai_client() -> Optional["OpenAI"]:
         return OpenAI(api_key=api_key)  # type: ignore
     except Exception:
         return None
-
 
 def synthesize_speech(text: str, language: str = "en") -> Optional[bytes]:
     if not text:
@@ -43,7 +41,7 @@ def synthesize_speech(text: str, language: str = "en") -> Optional[bytes]:
     if client is not None:
         try:
             voice = LANG_TO_TTS_VOICE.get(lang, "alloy")
-            # Try non-streaming API first
+            # Try non-streaming OpenAI TTS
             try:
                 resp = client.audio.speech.create(
                     model="gpt-4o-mini-tts",
@@ -52,7 +50,7 @@ def synthesize_speech(text: str, language: str = "en") -> Optional[bytes]:
                     input=text,
                 )
                 if hasattr(resp, "read"):
-                    return resp.read()  # type: ignore
+                    return resp.read()
                 if hasattr(resp, "content") and isinstance(resp.content, (bytes, bytearray)):
                     return bytes(resp.content)
             except Exception:
@@ -73,11 +71,12 @@ def synthesize_speech(text: str, language: str = "en") -> Optional[bytes]:
         except Exception:
             pass
 
-    # Fallback to gTTS
+    # Fallback to gTTS for TTS (requires internet)
     if gTTS is not None:
         try:
             mp3_bytes = io.BytesIO()
-            gTTS(text=text, lang=("zh-cn" if lang == "zh" else lang), slow=False).write_to_fp(mp3_bytes)
+            gtts_lang = "zh-cn" if lang == "zh" else lang  # gTTS expects "zh-cn"
+            gTTS(text=text, lang=gtts_lang, slow=False).write_to_fp(mp3_bytes)
             return mp3_bytes.getvalue()
         except Exception:
             return None
