@@ -10,7 +10,6 @@ from tts import synthesize_speech
 
 APP_TITLE = "Realtime Multi‑Language Translator"
 
-
 def init_page() -> None:
     st.set_page_config(page_title=APP_TITLE, page_icon="🌐", layout="wide")
     st.title(APP_TITLE)
@@ -19,7 +18,6 @@ def init_page() -> None:
     )
     if "history" not in st.session_state:
         st.session_state.history = []
-
 
 def lang_selectors() -> Tuple[str, str]:
     names = list(SUPPORTED_LANGUAGES.values())
@@ -43,7 +41,6 @@ def lang_selectors() -> Tuple[str, str]:
             key="dst_lang_select",
         )
     return LANG_NAME_TO_CODE[src_name], LANG_NAME_TO_CODE[dst_name]
-
 
 def text_translation_tab() -> None:
     src_code, dst_code = lang_selectors()
@@ -75,11 +72,10 @@ def text_translation_tab() -> None:
         voice_enabled = st.toggle("Text-to-speech", value=False, key="tts_toggle_text")
         if voice_enabled:
             voice_audio = synthesize_speech(result, language=dst_code)
-            if voice_audio is not None:
+            if voice_audio:
                 st.audio(voice_audio, format="audio/mp3")
             else:
                 st.info("TTS not available. Configure OPENAI_API_KEY for best quality.")
-
 
 def speech_translation_tab() -> None:
     src_code, dst_code = lang_selectors()
@@ -90,7 +86,6 @@ def speech_translation_tab() -> None:
         start_prompt="Start recording",
         stop_prompt="Stop",
         key="recorder",
-        sample_rate=16000,
         just_once=False,
     )
 
@@ -107,13 +102,12 @@ def speech_translation_tab() -> None:
                     play_tts = st.toggle("Play translated audio", value=False, key="tts_toggle_speech")
                     if play_tts:
                         voice_audio = synthesize_speech(translated, language=dst_code)
-                        if voice_audio is not None:
+                        if voice_audio:
                             st.audio(voice_audio, format="audio/mp3")
                         else:
                             st.info("TTS not available. Configure OPENAI_API_KEY for best quality.")
             else:
                 st.warning("Transcription unavailable. Provide OPENAI_API_KEY for speech.")
-
 
 def history_panel() -> None:
     st.subheader("History")
@@ -126,7 +120,6 @@ def history_panel() -> None:
         st.write(dst_text)
         st.divider()
 
-
 def main() -> None:
     init_page()
     tabs = st.tabs(["Text", "Speech", "History"])
@@ -137,7 +130,7 @@ def main() -> None:
     with tabs[2]:
         history_panel()
 
-
 if __name__ == "__main__":
     main()
+
 
