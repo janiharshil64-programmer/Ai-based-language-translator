@@ -3,14 +3,13 @@ import os
 
 try:
     from openai import OpenAI
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     OpenAI = None  # type: ignore
 
 try:
     from deep_translator import GoogleTranslator
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     GoogleTranslator = None  # type: ignore
-
 
 SUPPORTED_LANGUAGES = {
     "en": "English",
@@ -29,7 +28,6 @@ DEEP_TRANSLATOR_CODE_MAP = {
     "zh": "zh-CN",
 }
 
-
 def _openai_client() -> Optional["OpenAI"]:
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -39,13 +37,11 @@ def _openai_client() -> Optional["OpenAI"]:
     except Exception:
         return None
 
-
-def _normalize_lang(lang: str) -> str:
+def _normalize_lang(lang: Optional[str]) -> str:
     lang = (lang or "").lower()
     if lang in SUPPORTED_LANGUAGES:
         return lang
     return "en"
-
 
 def translate_text(text: str, src_lang: Optional[str] = None, target_lang: Optional[str] = None) -> str:
     if not text:
@@ -54,12 +50,12 @@ def translate_text(text: str, src_lang: Optional[str] = None, target_lang: Optio
     src = _normalize_lang(src_lang or "en")
     dst = _normalize_lang(target_lang or "hi")
 
-    # Prefer OpenAI for translation quality
+    # Try OpenAI translation first for quality
     client = _openai_client()
     if client is not None:
         try:
             system_prompt = (
-                "You are a professional translation engine. Translate the user text from "
+                f"You are a professional translation engine. Translate the user text from "
                 f"{SUPPORTED_LANGUAGES[src]} ({src}) to {SUPPORTED_LANGUAGES[dst]} ({dst}). "
                 "Only return the translated text without any additional commentary."
             )
@@ -76,15 +72,16 @@ def translate_text(text: str, src_lang: Optional[str] = None, target_lang: Optio
         except Exception:
             pass
 
-    # Fallback to free translator (quality/rate limits may vary)
+    # Fallback to deep-translator's GoogleTranslator
     if GoogleTranslator is not None:
         try:
             src_dt = DEEP_TRANSLATOR_CODE_MAP.get(src, src)
             dst_dt = DEEP_TRANSLATOR_CODE_MAP.get(dst, dst)
-            result = GoogleTranslator(source=src_dt, target=dst_dt).translate(text)
-            return (result or "").strip()
+            translator = GoogleTranslator(source=src_dt, target=dst_dt)
+            result = translator.translate(text)
+            return result.strip() if result else ""
         except Exception:
             pass
 
-    # Last resort: echo back
+    # Last fallback: return original text
     return text
