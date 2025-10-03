@@ -10,6 +10,7 @@ from tts import synthesize_speech
 
 APP_TITLE = "Realtime Multi‑Language Translator"
 
+
 def init_page() -> None:
     st.set_page_config(page_title=APP_TITLE, page_icon="🌐", layout="wide")
     st.title(APP_TITLE)
@@ -18,6 +19,7 @@ def init_page() -> None:
     )
     if "history" not in st.session_state:
         st.session_state.history = []
+
 
 def lang_selectors() -> Tuple[str, str]:
     names = list(SUPPORTED_LANGUAGES.values())
@@ -41,6 +43,7 @@ def lang_selectors() -> Tuple[str, str]:
             key="dst_lang_select",
         )
     return LANG_NAME_TO_CODE[src_name], LANG_NAME_TO_CODE[dst_name]
+
 
 def text_translation_tab() -> None:
     src_code, dst_code = lang_selectors()
@@ -77,6 +80,7 @@ def text_translation_tab() -> None:
             else:
                 st.info("TTS not available. Configure OPENAI_API_KEY for best quality.")
 
+
 def speech_translation_tab() -> None:
     src_code, dst_code = lang_selectors()
     st.subheader("Speech translation (record and translate)")
@@ -86,6 +90,7 @@ def speech_translation_tab() -> None:
         start_prompt="Start recording",
         stop_prompt="Stop",
         key="recorder",
+        sample_rate=16000,
         just_once=False,
     )
 
@@ -109,6 +114,7 @@ def speech_translation_tab() -> None:
             else:
                 st.warning("Transcription unavailable. Provide OPENAI_API_KEY for speech.")
 
+
 def history_panel() -> None:
     st.subheader("History")
     if not st.session_state.history:
@@ -120,6 +126,7 @@ def history_panel() -> None:
         st.write(dst_text)
         st.divider()
 
+
 def main() -> None:
     init_page()
     tabs = st.tabs(["Text", "Speech", "History"])
@@ -130,5 +137,7 @@ def main() -> None:
     with tabs[2]:
         history_panel()
 
+
 if __name__ == "__main__":
     main()
+
