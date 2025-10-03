@@ -4,11 +4,10 @@ import os
 
 try:
     from openai import OpenAI
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     OpenAI = None  # type: ignore
 
 AUDIO_FORMAT = "wav"
-
 
 def _openai_client() -> Optional["OpenAI"]:
     api_key = os.getenv("OPENAI_API_KEY")
@@ -19,33 +18,34 @@ def _openai_client() -> Optional["OpenAI"]:
     except Exception:
         return None
 
-
 def transcribe_audio_wav(audio_bytes: bytes, source_lang: str = "en") -> Optional[str]:
-    """Transcribe WAV audio bytes to text using OpenAI Whisper if available.
+    """
+    Transcribe WAV audio bytes to text using OpenAI Whisper.
 
-    Returns None if unavailable or on failure.
+    Returns transcribed text or None if unavailable or on error.
     """
     client = _openai_client()
     if client is None:
         return None
 
+    audio_file = io.BytesIO(audio_bytes)
+    audio_file.name = f"input.{AUDIO_FORMAT}"
+
     try:
-        audio_file = io.BytesIO(audio_bytes)
-        audio_file.name = f"input.{AUDIO_FORMAT}"
+        response = client.audio.transcriptions.create(
+            model="gpt-4o-mini-transcribe",
+            file=audio_file,
+            language=source_lang,
+        )
+        return response.text.strip()
+    except Exception:
         try:
-            resp = client.audio.transcriptions.create(
-                model="gpt-4o-mini-transcribe",
-                file=audio_file,
-                language=source_lang,
-            )
-            return (getattr(resp, "text", "") or "").strip()
-        except Exception:
             audio_file.seek(0)
-            resp = client.audio.transcriptions.create(
+            response = client.audio.transcriptions.create(
                 model="whisper-1",
                 file=audio_file,
                 language=source_lang,
             )
-            return (getattr(resp, "text", "") or "").strip()
-    except Exception:
-        return None
+            return response.text.strip()
+        except Exception:
+            return None
